@@ -1,0 +1,14 @@
+{
+	"private": true,
+	"workspaces": [
+		"language-service-plugin",
+		"vscode-extension"
+	],
+	"devDependencies": {
+		"vitest": "^1.6.0"
+	},
+	"scripts": {
+		"build": "yarn workspace @vscode/ts-plugin-customized build && yarn workspace ts-customized build",
+		"test": "yarn workspace @vscode/ts-plugin-customized test"
+	}
+}

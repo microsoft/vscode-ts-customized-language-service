@@ -1,0 +1,35 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Run Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}/vscode-extension",
+				"${workspaceFolder}/demo",
+				"--profile Empty"
+			],
+			"outFiles": ["${workspaceFolder}/vscode-extension/dist/**/*.js"],
+			"env": {
+				"TSS_DEBUG": "5859"
+			}
+		},
+		{
+			"name": "Attach to TS Server",
+			"type": "node",
+			"request": "attach",
+			"protocol": "inspector",
+			"port": 5859,
+			"sourceMaps": true,
+			"outFiles": ["${workspaceFolder}/language-service-plugin/dist/**/*.js", "!**/node_modules/**"]
+		}
+	],
+	"compounds": [
+		{
+			"name": "Compound",
+			"configurations": ["Run Extension", "Attach to TS Server"]
+		}
+	]
+}

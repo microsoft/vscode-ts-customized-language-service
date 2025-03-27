@@ -1,0 +1,70 @@
+{
+	"name": "ts-customized",
+	"private": true,
+	"displayName": "TS/JS Customized",
+	"description": "Customized features/improvements/fixes.",
+	"version": "1.0.0",
+	"icon": "docs/logo.drawio.png",
+	"keywords": [
+		"typescript",
+		"javascript"
+	],
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.90.0"
+	},
+	"files": [
+		"dist/**/*",
+		"package.json",
+		"node_modules/@vscode/ts-plugin-customized/**/*",
+		"docs/logo.drawio.png",
+		"LICENSE"
+	],
+	"publisher": "ms-vscode",
+	"readme": "./README.md",
+	"repository": {
+		"url": "https://github.com/microsoft/vscode-ts-customized.git"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"activationEvents": [
+		"onLanguage:typescript",
+		"onLanguage:typescriptreact",
+		"onLanguage:javascript",
+		"onLanguage:javascriptreact"
+	],
+	"main": "dist/index",
+	"contributes": {
+		"typescriptServerPlugins": [
+			{
+				"name": "@vscode/ts-plugin-customized",
+				"enableForWorkspaceTypeScriptVersions": true
+			}
+		]
+	},
+	"scripts": {
+		"build": "yarn build-src && yarn build-package",
+		"build-src": "rollup -c rollup.config.mjs",
+		"build-package": "vsce package --out extension.vsix",
+		"dev": "rollup -c rollup.config.mjs --watch"
+	},
+	"dependencies": {
+		"@vscode/ts-plugin-customized": "*"
+	},
+	"devDependencies": {
+		"@rollup/plugin-typescript": "11.1.6",
+		"@types/node": "^20.14.9",
+		"@types/vscode": "^1.90.0",
+		"@vscode/vsce": "^3.2.2",
+		"rollup": "4.22.4",
+		"rollup-plugin-copy": "3.5.0",
+		"rollup-plugin-delete": "2.0.0",
+		"typescript": "^5.5.2"
+	},
+	"vsce": {
+		"baseImagesUrl": "https://github.com/microsoft/vscode-ts-customized/raw/main/vscode-extension",
+		"baseContentUrl": "https://github.com/microsoft/vscode-ts-customized/raw/main/vscode-extension",
+		"yarn": true
+	}
+}
