@@ -2,11 +2,25 @@
 
 ## Setup
 
-* Install this extension
+* Manually build & install this extension
 
 ## Features
 
-TODO
+* Find `createInstance` from `constructor`:
+
+![demo1](docs/demo1.gif)
+
+* Go to definition skips class, and only jumps to constructor:
+
+![demo2](docs/demo2.gif)
+
+## Building
+
+```
+yarn; yarn build
+
+code-insiders --install-extension ./vscode-extension/extension.vsix
+```
 
 ## Contributing
 
