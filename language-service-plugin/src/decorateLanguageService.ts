@@ -80,11 +80,11 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
             // We are on the constructor
 
             if (result?.length !== 1) {
-                return;
+                return result;
             }
             const def = result[0].definition;
             if (def.kind !== ts.ScriptElementKind.classElement) {
-                return;
+                return result;
             }
 
             const classReferences = service.findReferences(def.fileName, def.textSpan.start);
