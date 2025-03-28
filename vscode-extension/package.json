@@ -1,10 +1,11 @@
 {
-	"name": "ts-customized",
+	"name": "ts-customized-language-service",
 	"private": true,
-	"displayName": "TS/JS Customized",
+	"displayName": "TS/JS VS Code Customized Language Service",
 	"description": "Customized features/improvements/fixes.",
 	"version": "1.0.0",
 	"icon": "docs/logo.drawio.png",
+	"preview": true,
 	"keywords": [
 		"typescript",
 		"javascript"
