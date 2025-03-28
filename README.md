@@ -17,6 +17,9 @@
 ## Building
 
 ```
+git clone https://github.com/microsoft/vscode-ts-customized-language-service
+cd vscode-ts-customized-language-service
+
 yarn; yarn build
 
 code-insiders --install-extension ./vscode-extension/extension.vsix
