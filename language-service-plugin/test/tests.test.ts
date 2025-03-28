@@ -41,6 +41,7 @@ describe("Find Indirect Constructors", () => {
 			}
 
 			f(Test);
+			console.log(Test.foo);
 		`,
 		(ts, languageService, sf, m) => {
 			const ls = decorateLanguageService(ts, languageService)
@@ -55,6 +56,7 @@ describe("Find Indirect Constructors", () => {
 		}
 	));
 });
+
 
 function normalizeDefInfos(defInfos: readonly (DefinitionInfo | ReferenceEntry)[] | undefined, program: Program | undefined) {
 	if (!defInfos || !program) {

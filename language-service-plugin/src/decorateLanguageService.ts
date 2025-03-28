@@ -34,7 +34,7 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
         return node;
     }
 
-    function isChildOfFunctionInvocation(node: tsApi.Node): boolean {
+    function isChildOfFunctionInvocationButNotPropertyAccess(node: tsApi.Node): boolean {
         if (!node) { return false; }
         let parent = node.parent;
         while (parent) {
@@ -43,6 +43,9 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
             }
             if (ts.isCallExpression(parent)) {
                 return true;
+            }
+            if (ts.isPropertyAccessExpression(parent)) {
+                return false;
             }
             parent = parent.parent;
         }
@@ -79,7 +82,7 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
             }
             // We are on the constructor
 
-            if (result?.length !== 1) {
+            if (!result || result.length === 0) {
                 return result;
             }
             const def = result[0].definition;
@@ -93,9 +96,9 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
                 for (const r of rr.references) {
                     const sfr = service.getProgram()?.getSourceFile(r.fileName);
                     if (!sfr) { continue; }
-                    const n = findLeafNodeAtPosition(sfr, r.textSpan.start);
+                    const n = findLeafNodeAtPosition(sfr, r.textSpan.start + 1);
 
-                    if (n && isChildOfFunctionInvocation(n)) {
+                    if (n && isChildOfFunctionInvocationButNotPropertyAccess(n)) {
                         result[0].references.push(r);
                     }
                 }
