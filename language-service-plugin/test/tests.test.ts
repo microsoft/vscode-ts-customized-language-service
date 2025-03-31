@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { withLanguageService } from "./utils";
+import { normalizeDefInfos, normalizeDiagnostics, normalizeReferencedSymbols, withLanguageService } from "./utils";
 import { decorateLanguageService } from "../src/decorateLanguageService";
-import { DefinitionInfo, Program, ReferencedSymbol, ReferenceEntry, TextSpan } from 'typescript';
 
 describe("Remove Duplicate Definitions", () => {
 	test('Basic', () => withLanguageService(
@@ -57,63 +56,47 @@ describe("Find Indirect Constructors", () => {
 	));
 });
 
+describe("Find property initialization issues", () => {
+	test('Basic', () => withLanguageService(
+		`
+			class Test {
+				public readonly bar = this.test();
 
-function normalizeDefInfos(defInfos: readonly (DefinitionInfo | ReferenceEntry)[] | undefined, program: Program | undefined) {
-	if (!defInfos || !program) {
-		return undefined;
-	}
-	const result: string[] = [];
-	for (const defInfo of defInfos) {
-		const text = format({ fileName: defInfo.fileName, textSpan: defInfo.textSpan }, program);
-		if (!text) continue;
+				constructor(
+					public readonly foo: string,
+				) { }
 
-		result.push(text);
-	}
-	return result;
-}
-
-function normalizeReferencedSymbols(refs: ReferencedSymbol[] | undefined, program: Program | undefined) {
-	if (!refs || !program) {
-		return undefined;
-	}
-
-	const result: string[] = [];
-	for (const ref of refs) {
-		const definitionText = format(ref.definition, program);
-		if (definitionText) {
-			result.push('def:' + definitionText);
-		}
-
-		for (const r of ref.references) {
-			const markedText = format(r, program);
-			if (markedText) {
-				result.push('ref: ' + markedText);
+				test() {
+					return this.foo;
+				}
 			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+
+			expect(normalizeDiagnostics(ls.getSemanticDiagnostics(sf.fileName), languageService.getProgram())).toMatchInlineSnapshot(`
+				[
+				  "diag: 					return this.[foo];
+				-> Parameter property 'foo' is used before its declaration. Usage stack: this.test(...) -> this.foo",
+				]
+			`);
 		}
-	}
-	return result;
-}
+	));
 
-function format(r: { fileName: string, textSpan: TextSpan }, program: Program) {
-	const sourceFile = program.getSourceFile(r.fileName);
-	if (!sourceFile) return null;
+	test('Basic', () => withLanguageService(
+		`
+			class Test {
+				public readonly bar = (() => { return this.foo; })();
 
-	const span = r.textSpan;
-	const text = sourceFile.text.substring(span.start, span.start + span.length);
-	const ctx = extendToFullLines(span, sourceFile.text);
-	const contextText = sourceFile.text.substring(ctx.start, ctx.start + ctx.length);
+				constructor(
+					public readonly foo: string,
+				) { }
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
 
-	const start = contextText.indexOf(text);
-	const end = start + text.length;
-	return contextText.substring(0, start) + "[" + text + "]" + contextText.substring(end);
-};
-
-function extendToFullLines(span: TextSpan, str: string): TextSpan {
-	const start = str.lastIndexOf("\n", span.start) + 1;
-	const end = str.indexOf("\n", span.start + span.length);
-
-	return {
-		start,
-		length: end - start,
-	};
-}
+			expect(normalizeDiagnostics(ls.getSemanticDiagnostics(sf.fileName), languageService.getProgram())).toMatchInlineSnapshot(`[]`);
+		}
+	));
+});

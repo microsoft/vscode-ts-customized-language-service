@@ -1,6 +1,9 @@
 import type * as tsApi from "typescript/lib/tsserverlibrary";
+import { check, setTsApi } from "./propertyInitOrderChecker";
 
 export function decorateLanguageService(ts: typeof tsApi, service: tsApi.LanguageService): tsApi.LanguageService {
+    setTsApi(ts);
+
     function shouldIgnoreFirst(info: readonly tsApi.DefinitionInfo[]): boolean {
         if (info.length !== 2) { return false; }
 
@@ -54,6 +57,29 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
 
     const s: tsApi.LanguageService = {
         ...service,
+        getSemanticDiagnostics: (fileName) => {
+            const result = service.getSemanticDiagnostics(fileName);
+
+            const sf = service.getProgram()?.getSourceFile(fileName);
+            if (sf) {
+                const errors = check(sf, service.getProgram()!, {
+                    isCancellationRequested: () => false,
+                    throwIfCancellationRequested: () => { },
+                });
+                for (const error of errors) {
+                    result.push({
+                        category: ts.DiagnosticCategory.Warning,
+                        code: 0,
+                        file: sf,
+                        messageText: error.message,
+                        start: error.node.pos,
+                        length: error.node.end - error.node.pos,
+                    });
+                }
+            }
+
+            return result;
+        },
         getDefinitionAndBoundSpan: (fileName, position) => {
             const result = service.getDefinitionAndBoundSpan(fileName, position);
             if (result?.definitions && shouldIgnoreFirst(result.definitions)) {
