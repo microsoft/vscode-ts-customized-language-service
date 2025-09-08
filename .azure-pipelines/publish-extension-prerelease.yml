@@ -1,8 +1,9 @@
-trigger:
-    branches:
-        include:
-            - main
-pr: none
+schedules:
+    - cron: "0 9 * * Mon-Thu"
+      displayName: Nightly Release Schedule
+      branches:
+          include:
+              - main
 
 resources:
     repositories:
@@ -19,15 +20,19 @@ parameters:
       default: false
 
 extends:
-    template: azure-pipelines/extension/stable.yml@templates
+    template: azure-pipelines/extension/pre-release.yml@templates
     parameters:
         publishExtension: ${{ parameters.publishExtension }}
         workingDirectory: $(Build.SourcesDirectory)/vscode-extension
         vscePackageArgs: --yarn
+        ghCreateTag: true
 
         buildSteps:
             - script: yarn install --frozen-lockfile
               displayName: Install dependencies
+
+            - script: yarn run patch-prerelease $(Build.BuildNumber)
+              displayName: Apply prerelease patch
 
             - script: yarn run build
               displayName: Build

@@ -48,7 +48,8 @@
 		"build": "yarn build-src && yarn build-package",
 		"build-src": "rollup -c rollup.config.mjs",
 		"build-package": "vsce package --out extension.vsix",
-		"dev": "rollup -c rollup.config.mjs --watch"
+		"dev": "rollup -c rollup.config.mjs --watch",
+		"patch-prerelease": "node ./scripts/applyPatchForPrerelease.js"
 	},
 	"dependencies": {
 		"@vscode/ts-plugin-customized": "*"
