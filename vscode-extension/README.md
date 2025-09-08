@@ -1,79 +1,11 @@
 # TypeScript/JavaScript Relative File Path Support
 
-An extension that provides support for dealing with (relative) file paths in TypeScript/JavaScript.
+An extension that adds some custom TS language service features.
 
-## Setup
-
-* Install this extension
-
-* For TypeScript:
-    * Declare a type of name `RelativeFilePath` with one type parameter:
-        ```ts
-        type RelativeFilePath<T extends string> = string & { baseDir?: T };
-        ```
-    * Declare a function that uses this type (the name of the function is arbitrary):
-        ```ts
-        function myFn(path: RelativeFilePath<'$dir/mySubDir'>) {
-            // The implementation is up to you.
-        }
-        ```
-* For JavaScript (use JS Docs to specify the types):
-    ```js
-    /**
-     * @typedef {string & { foo?: TBaseDir }} RelativeFilePath
-     * @template TBaseDir
-     */
-
-    /**
-     * @param {RelativeFilePath<'$dir/mySubDir'>} path
-     */
-    function myFn(path) { ... }
-    ```
-
-
-* Use `$dir` to reference the full directory path to the file that defines the function.
-* The first overloading of this function must have exactly one parameter which has to be of the mentioned type.
-* Now you get editor support for file paths in `myFn` call expressions!
-    ```ts
-    // Relative to `mySubDir` in the directory of the source file that defines `myFn`
-    myFn('myDir/myFile.txt');
-    ```
-
-
-## Features
-
-### Go-To-Definition
-
-Opens the referenced file in a new editor.
-
-![go-to-definition-demo](./docs/demo-goToDefinition.gif)
-
-### Path-Completion
-
-Provides auto-completion for file-paths (relative to the specified base directory).
-
-![path-autocompletion-demo](./docs/demo-path-autocompletion.gif)
-
-### Renaming
-
-Renames the referenced file and updates the file path.
-
-![rename-demo](./docs/demo-rename.gif)
-
-
-### Inlining
-
-Inlining deletes the referenced file on disk and inlines its content as `fileContents` property.
-Only works on objects that have the shape `{ filePath: myPathFn("myRelativePathStr"), ...additionalProperties }`.
-
-![inlining-demo](./docs/demo-inlining.gif)
-
-### Extraction
-
-Extraction is the opposit of inlining: This action creates a file on disk with the specified content and references this file by a file path function in scope (which means it has to be in the same file or imported).
-Only works on objects that have the shape `{ fileName: "myRelativeFileName", fileContents: "myFileContent", ...additionalProperties }`.
-
-![extraction-demo](./docs/demo-extraction.gif)
+Features include:
+* Remove duplicate definitions when going to definition of `new MyClass()`
+* Finding indirect constructor calls when searching for references of a constructor, e.g. when dependency injection is used.
+* Go to definition for fields where their type is inferred from constructor initialization.
 
 ## Contributing
 
