@@ -6,11 +6,11 @@ An extension that adds some custom TS language service features.
 
 * Find `createInstance` from `constructor`:
 
-![demo1](./vscode-extension/docs/demo1.gif)
+![demo1](./docs/demo1.gif)
 
 * Go to definition skips class, and only jumps to constructor:
 
-![demo2](./vscode-extension/docs/demo2.gif)
+![demo2](./docs/demo2.gif)
 
 * Go to definition for fields where their type is inferred from constructor initialization.
 
