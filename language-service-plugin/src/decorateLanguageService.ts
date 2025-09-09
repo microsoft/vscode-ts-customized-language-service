@@ -14,7 +14,7 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
         if (!program) {
             return undefined;
         }
-        
+
         const sourceFile = program.getSourceFile(fileName);
         if (!sourceFile) {
             return undefined;
@@ -39,7 +39,7 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
         }
 
         const propertyDecl = findNodeAtPosition(defSourceFile, definitionInfo.textSpan.start);
-        
+
         // If we didn't find a property declaration directly, maybe we need to search differently
         let finalPropertyDecl: tsApi.PropertyDeclaration | undefined = undefined;
         if (propertyDecl && ts.isPropertyDeclaration(propertyDecl)) {
@@ -119,8 +119,8 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
                 const expr = statement.expression;
                 if (ts.isBinaryExpression(expr) && expr.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
                     const left = expr.left;
-                    if (ts.isPropertyAccessExpression(left) && 
-                        left.expression.kind === ts.SyntaxKind.ThisKeyword && 
+                    if (ts.isPropertyAccessExpression(left) &&
+                        left.expression.kind === ts.SyntaxKind.ThisKeyword &&
                         left.name.text === propertyName) {
                         return left; // Return the property access part of the assignment
                     }
@@ -208,6 +208,15 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
         },
         getDefinitionAndBoundSpan: (fileName, position) => {
             const result = service.getDefinitionAndBoundSpan(fileName, position);
+
+            const redirectedResult = tryRedirectUntypedFieldToConstructorAssignment(fileName, position, result?.definitions);
+            if (result && redirectedResult && redirectedResult.length > 0) {
+                return {
+                    textSpan: result.textSpan,
+                    definitions: redirectedResult,
+                };
+            }
+
             if (result?.definitions && shouldIgnoreFirst(result.definitions)) {
                 return {
                     ...result,
@@ -218,13 +227,12 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
         },
         getDefinitionAtPosition: (fileName, position) => {
             const result = service.getDefinitionAtPosition(fileName, position);
-            
-            // Check for untyped class field redirection
+
             const redirectedResult = tryRedirectUntypedFieldToConstructorAssignment(fileName, position, result);
             if (redirectedResult) {
                 return redirectedResult;
             }
-            
+
             if (result && shouldIgnoreFirst(result)) {
                 return result.slice(1);
             }
