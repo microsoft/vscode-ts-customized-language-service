@@ -36,6 +36,7 @@ extends:
 
             - script: yarn run patch-prerelease $(Build.BuildNumber)
               displayName: Apply prerelease patch
+              workingDirectory: $(Build.SourcesDirectory)/vscode-extension
 
             - script: yarn run build
               displayName: Build
