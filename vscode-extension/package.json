@@ -24,7 +24,7 @@
 	"publisher": "ms-vscode",
 	"readme": "./README.md",
 	"repository": {
-		"url": "https://github.com/microsoft/vscode-ts-customized.git"
+		"url": "https://github.com/microsoft/vscode-ts-customized-language-service.git"
 	},
 	"categories": [
 		"Programming Languages"
@@ -65,8 +65,8 @@
 		"typescript": "^5.5.2"
 	},
 	"vsce": {
-		"baseImagesUrl": "https://github.com/microsoft/vscode-ts-customized/raw/main/vscode-extension",
-		"baseContentUrl": "https://github.com/microsoft/vscode-ts-customized/raw/main/vscode-extension",
+		"baseImagesUrl": "https://github.com/microsoft/vscode-ts-customized-language-service/raw/main/vscode-extension",
+		"baseContentUrl": "https://github.com/microsoft/vscode-ts-customized-language-service/raw/main/vscode-extension",
 		"yarn": true
 	}
 }
