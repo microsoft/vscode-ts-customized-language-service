@@ -1,10 +1,17 @@
-# TypeScript/JavaScript Relative File Path Support
+# TS/JS VS Code Customized Language Service
 
 An extension that adds some custom TS language service features.
 
-Features include:
-* Remove duplicate definitions when going to definition of `new MyClass()`
-* Finding indirect constructor calls when searching for references of a constructor, e.g. when dependency injection is used.
+## Features
+
+* Find `createInstance` from `constructor`:
+
+![demo1](./vscode-extension/docs/demo1.gif)
+
+* Go to definition skips class, and only jumps to constructor:
+
+![demo2](./vscode-extension/docs/demo2.gif)
+
 * Go to definition for fields where their type is inferred from constructor initialization.
 
 ## Contributing

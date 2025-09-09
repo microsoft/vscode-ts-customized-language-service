@@ -1,4 +1,4 @@
-# TypeScript Customized
+# TS/JS VS Code Customized Language Service
 
 ## Setup
 
@@ -8,11 +8,11 @@
 
 * Find `createInstance` from `constructor`:
 
-![demo1](docs/demo1.gif)
+![demo1](./vscode-extension/docs/demo1.gif)
 
 * Go to definition skips class, and only jumps to constructor:
 
-![demo2](docs/demo2.gif)
+![demo2](./vscode-extension/docs/demo2.gif)
 
 ## Building
 
