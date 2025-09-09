@@ -1,3 +1,6 @@
+trigger: none 
+pr: none
+
 schedules:
     - cron: "0 9 * * Mon-Thu"
       displayName: Nightly Release Schedule
