@@ -25,6 +25,66 @@ describe("Remove Duplicate Definitions", () => {
 			`);
 		}
 	));
+
+	test('Should go to constructor when class used as function argument', () => withLanguageService(
+		`
+			class TextModelChangeTracker {
+				constructor(
+					private readonly modifiedModel: string,
+					private readonly state: string,
+					telemetryInfo: string,
+					entryId: string,
+				) {
+					console.log("constructor");
+				}
+			}
+
+			function createInstance<T>(ctor: new (...args: any[]) => T, ...args: any[]): T {
+				return new ctor(...args);
+			}
+
+			createInstance(TextModelChange|Tracker, "model", "state", "info", "id");
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+
+			expect(normalizeDefInfos(ls.getDefinitionAtPosition(sf.fileName, m[0]), languageService.getProgram())).toMatchInlineSnapshot(`
+				[
+				  "				[constructor(
+									private readonly modifiedModel: string,
+									private readonly state: string,
+									telemetryInfo: string,
+									entryId: string,
+								) {
+									console.log("constructor");
+								}]",
+				]
+			`);
+		}
+	));
+
+	test('Should go to class when not used as function argument', () => withLanguageService(
+		`
+			class TextModelChangeTracker {
+				constructor(
+					private readonly modifiedModel: string,
+				) {
+					console.log("constructor");
+				}
+			}
+
+			const someVariable: TextModelChange|Tracker;
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+
+			expect(normalizeDefInfos(ls.getDefinitionAtPosition(sf.fileName, m[0]), languageService.getProgram())).toMatchInlineSnapshot(`
+				[
+				  "			class [TextModelChangeTracker] {",
+				]
+			`);
+		}
+	));
 });
 
 describe("Find Indirect Constructors", () => {

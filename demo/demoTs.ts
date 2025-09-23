@@ -11,6 +11,13 @@ function f(data: any) {
 
 f(Test);
 
+// Test the new functionality - class used as function argument
+function createInstance<T>(ctor: new (...args: any[]) => T, ...args: any[]): T {
+	return new ctor(...args);
+}
+
+createInstance(Test, "model", "state");
+
 // Demo of the new untyped field feature
 class FooBar {
 	public myField; // [1] - untyped field declaration
