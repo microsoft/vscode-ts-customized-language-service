@@ -181,6 +181,84 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
         return false;
     }
 
+    function tryRedirectClassToConstructor(fileName: string, position: number, originalResult: readonly tsApi.DefinitionInfo[] | undefined): readonly tsApi.DefinitionInfo[] | undefined {
+        if (!originalResult || originalResult.length === 0) {
+            return undefined;
+        }
+
+        // Get the source file and find the node at position
+        const program = service.getProgram();
+        if (!program) {
+            return undefined;
+        }
+
+        const sourceFile = program.getSourceFile(fileName);
+        if (!sourceFile) {
+            return undefined;
+        }
+
+        const node = findLeafNodeAtPosition(sourceFile, position);
+        if (!node) {
+            return undefined;
+        }
+
+        // Check if we're on a class reference that's being used as a function argument
+        const definitionInfo = originalResult[0];
+        if (!definitionInfo || definitionInfo.kind !== ts.ScriptElementKind.classElement) {
+            return undefined;
+        }
+
+        // Check if this node is a child of a function invocation (but not property access)
+        if (!isChildOfFunctionInvocationButNotPropertyAccess(node)) {
+            return undefined;
+        }
+
+        // Get the class definition and find its constructor
+        const defSourceFile = program.getSourceFile(definitionInfo.fileName);
+        if (!defSourceFile) {
+            return undefined;
+        }
+
+        const classNode = findNodeAtPosition(defSourceFile, definitionInfo.textSpan.start);
+        let actualClassNode: tsApi.ClassDeclaration | undefined = undefined;
+        
+        if (classNode && ts.isClassDeclaration(classNode)) {
+            actualClassNode = classNode;
+        } else if (classNode) {
+            // Walk up the tree to find the class declaration
+            let currentNode = classNode;
+            while (currentNode && !ts.isClassDeclaration(currentNode)) {
+                currentNode = currentNode.parent;
+            }
+            if (currentNode && ts.isClassDeclaration(currentNode)) {
+                actualClassNode = currentNode;
+            }
+        }
+
+        if (!actualClassNode) {
+            return undefined;
+        }
+
+        // Find the constructor in the class
+        const constructor = actualClassNode.members.find(member => ts.isConstructorDeclaration(member));
+        if (!constructor) {
+            return undefined;
+        }
+
+        // Create a new DefinitionInfo pointing to the constructor
+        const constructorStart = constructor.getStart(defSourceFile);
+        const constructorEnd = constructor.getEnd();
+
+        return [{
+            ...definitionInfo,
+            kind: ts.ScriptElementKind.constructorImplementationElement,
+            textSpan: {
+                start: constructorStart,
+                length: constructorEnd - constructorStart,
+            },
+        }];
+    }
+
     const s: tsApi.LanguageService = {
         ...service,
         getSemanticDiagnostics: (fileName) => {
@@ -227,6 +305,12 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
         },
         getDefinitionAtPosition: (fileName, position) => {
             const result = service.getDefinitionAtPosition(fileName, position);
+
+            // First try to redirect class to constructor when used as function argument
+            const classToConstructorResult = tryRedirectClassToConstructor(fileName, position, result);
+            if (classToConstructorResult) {
+                return classToConstructorResult;
+            }
 
             const redirectedResult = tryRedirectUntypedFieldToConstructorAssignment(fileName, position, result);
             if (redirectedResult) {
