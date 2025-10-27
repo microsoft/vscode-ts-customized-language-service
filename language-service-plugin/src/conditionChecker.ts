@@ -40,7 +40,46 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
     }
 
     function checkConditionExpression(expr: tsApi.Expression) {
-        const type = typeChecker.getTypeAtLocation(expr);
+        // Try to get the declared type instead of the narrowed type
+        let type = typeChecker.getTypeAtLocation(expr);
+        
+        // If this is an identifier, try to get its declared type from the symbol
+        if (ts.isIdentifier(expr)) {
+            const symbol = typeChecker.getSymbolAtLocation(expr);
+            if (symbol) {
+                // Try to get the type from the declaration
+                const declarations = symbol.getDeclarations();
+                if (declarations && declarations.length > 0) {
+                    for (const decl of declarations) {
+                        // For variable declarations, parameters, etc.
+                        if ((ts.isVariableDeclaration(decl) || ts.isParameter(decl)) && decl.type) {
+                            // Get the type from the type annotation
+                            let declaredType = typeChecker.getTypeFromTypeNode(decl.type);
+                            
+                            // If it's a type reference (like MyType), try to expand it
+                            if (ts.isTypeReferenceNode(decl.type)) {
+                                // Get the aliased type (follow type aliases)
+                                const aliasSymbol = typeChecker.getSymbolAtLocation(decl.type.typeName);
+                                if (aliasSymbol && aliasSymbol.declarations && aliasSymbol.declarations.length > 0) {
+                                    const aliasDecl = aliasSymbol.declarations[0];
+                                    if (ts.isTypeAliasDeclaration(aliasDecl) && aliasDecl.type) {
+                                        const expandedType = typeChecker.getTypeFromTypeNode(aliasDecl.type);
+                                        if (expandedType) {
+                                            declaredType = expandedType;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (declaredType) {
+                                type = declaredType;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         
         // Don't check any or unknown types
         if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {

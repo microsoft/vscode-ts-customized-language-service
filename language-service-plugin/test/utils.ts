@@ -35,7 +35,18 @@ export class VirtualLanguageServiceHost implements ts.LanguageServiceHost {
     }
 
     public getScriptSnapshot(fileName: string): ts.IScriptSnapshot | undefined {
-        const content = this.files.get(fileName);
+        let content = this.files.get(fileName);
+        
+        // Provide lib files for proper type checking
+        if (!content && fileName.indexOf('lib.') >= 0) {
+            try {
+                const libPath = require.resolve('typescript').replace(/typescript\.js$/, fileName.replace(/.*\//, ''));
+                content = ts.sys.readFile(libPath);
+            } catch (e) {
+                // If we can't load lib files, that's ok for basic tests
+            }
+        }
+        
         if (!content) {
             return undefined;
         }
@@ -64,7 +75,19 @@ export class VirtualLanguageServiceHost implements ts.LanguageServiceHost {
     }
 
     public fileExists(path: string): boolean {
-        return this.files.has(path);
+        if (this.files.has(path)) {
+            return true;
+        }
+        // Check if it's a lib file
+        if (path.indexOf('lib.') >= 0) {
+            try {
+                const libPath = require.resolve('typescript').replace(/typescript\.js$/, path.replace(/.*\//, ''));
+                return ts.sys.fileExists(libPath);
+            } catch (e) {
+                return false;
+            }
+        }
+        return false;
     }
 }
 
