@@ -11,7 +11,7 @@ export function withLanguageService(
     const files = new Map<string, string>(
         Object.entries(content).map(([key, value]) => [key, stripMarkers(value).stripped])
     );
-    const serviceHost = new VirtualLanguageServiceHost(files, {});
+    const serviceHost = new VirtualLanguageServiceHost(files, { strict: true, strictNullChecks: true });
     const baseService = ts.createLanguageService(
         serviceHost,
         ts.createDocumentRegistry()

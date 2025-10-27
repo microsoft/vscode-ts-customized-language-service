@@ -1,8 +1,10 @@
 import type * as tsApi from "typescript/lib/tsserverlibrary";
 import { check, setTsApi } from "./propertyInitOrderChecker";
+import { checkConditions, setTsApi as setConditionCheckerTsApi } from "./conditionChecker";
 
 export function decorateLanguageService(ts: typeof tsApi, service: tsApi.LanguageService): tsApi.LanguageService {
     setTsApi(ts);
+    setConditionCheckerTsApi(ts);
 
     function tryRedirectUntypedFieldToConstructorAssignment(fileName: string, position: number, originalResult: readonly tsApi.DefinitionInfo[] | undefined): readonly tsApi.DefinitionInfo[] | undefined {
         if (!originalResult || originalResult.length === 0) {
@@ -278,6 +280,19 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
                         messageText: error.message,
                         start: error.node.pos,
                         length: error.node.end - error.node.pos,
+                    });
+                }
+
+                // Check for constant conditions
+                const conditionDiagnostics = checkConditions(sf, service.getProgram()!);
+                for (const diagnostic of conditionDiagnostics) {
+                    result.push({
+                        category: diagnostic.category === 'warning' ? ts.DiagnosticCategory.Warning : ts.DiagnosticCategory.Suggestion,
+                        code: 0,
+                        file: sf,
+                        messageText: diagnostic.message,
+                        start: diagnostic.node.getStart(sf),
+                        length: diagnostic.node.getEnd() - diagnostic.node.getStart(sf),
                     });
                 }
             }
