@@ -310,7 +310,7 @@ describe("Condition Checker", () => {
 		}
 	));
 
-	test('Hint - object | null (acts as always true due to TS simplification)', () => withLanguageService(
+	test('Hint - object | null union type', () => withLanguageService(
 		`
 			type MyType = {} | null;
 			declare const x: MyType;
@@ -323,17 +323,17 @@ describe("Condition Checker", () => {
 
 			const diags = normalizeDiagnostics(ls.getSemanticDiagnostics(sf.fileName), languageService.getProgram());
 			const filtered = diags?.filter(d => d.includes("This condition"));
-			// Note: TypeScript simplifies {} | null to just {} at the condition location
+			// With proper union type, should get a hint (not boolean) rather than warning (always true)
 			expect(filtered).toMatchInlineSnapshot(`
 				[
 				  "diag: 			if ([x]) {
-				-> This condition will always return 'true'.",
+				-> This condition is not a boolean type.",
 				]
 			`);
 		}
 	));
 
-	test('Hint - object | string (acts as always true due to TS simplification)', () => withLanguageService(
+	test('Hint - object | string union type', () => withLanguageService(
 		`
 			declare const x: object | string;
 			if (x) {
@@ -345,11 +345,12 @@ describe("Condition Checker", () => {
 
 			const diags = normalizeDiagnostics(ls.getSemanticDiagnostics(sf.fileName), languageService.getProgram());
 			const filtered = diags?.filter(d => d.includes("This condition"));
-			// Note: TypeScript simplifies object | string to just object (NonPrimitive) at the condition location
+			// object | string can be both truthy (object, non-empty string) and falsy (empty string)
+			// Should get a hint that it's not boolean
 			expect(filtered).toMatchInlineSnapshot(`
 				[
 				  "diag: 			if ([x]) {
-				-> This condition will always return 'true'.",
+				-> This condition is not a boolean type.",
 				]
 			`);
 		}

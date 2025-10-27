@@ -95,16 +95,35 @@ function stripMarkers(src: string): { stripped: string; markers: number[] } {
     let stripped = "";
     const markers = new Array<number>();
     let i = 0;
-    let first = true;
-    for (const part of src.split("|")) {
-        if (first) {
-            first = false;
-        } else {
-            markers.push(i);
+    
+    // Improved logic: only treat | as a marker if it's NOT surrounded by spaces
+    // Markers are like: identi|fier (no spaces)
+    // Union types are like: Type | Other (with spaces)
+    for (let idx = 0; idx < src.length; idx++) {
+        const char = src[idx];
+        
+        if (char === '|') {
+            // Check if this is a marker (no spaces around it) or a union type operator (spaces around it)
+            const prevChar = idx > 0 ? src[idx - 1] : '';
+            const nextChar = idx < src.length - 1 ? src[idx + 1] : '';
+            
+            // Union types have spaces: "A | B"
+            // Markers don't: "identifi|er"
+            const hasSpaceBefore = /\s/.test(prevChar) || prevChar === '';
+            const hasSpaceAfter = /\s/.test(nextChar) || nextChar === '';
+            const isUnionType = hasSpaceBefore && hasSpaceAfter;
+            
+            if (!isUnionType) {
+                // This is a marker, record position and skip it
+                markers.push(i);
+                continue;
+            }
         }
-        stripped += part;
-        i += part.length;
+        
+        stripped += char;
+        i++;
     }
+    
     return {
         stripped,
         markers,
