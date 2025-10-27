@@ -13,6 +13,14 @@ export interface ConditionDiagnostic {
     category: 'warning' | 'hint';
 }
 
+// Helper to safely get the intrinsic name of a boolean literal type
+function getBooleanLiteralIntrinsicName(type: tsApi.Type): 'true' | 'false' | undefined {
+    if (type.flags & ts.TypeFlags.BooleanLiteral) {
+        return (type as any).intrinsicName as 'true' | 'false' | undefined;
+    }
+    return undefined;
+}
+
 export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): ConditionDiagnostic[] {
     const result: ConditionDiagnostic[] = [];
     const typeChecker = program.getTypeChecker();
@@ -34,6 +42,11 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
     function checkConditionExpression(expr: tsApi.Expression) {
         const type = typeChecker.getTypeAtLocation(expr);
         
+        // Don't check any or unknown types
+        if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+            return;
+        }
+        
         // Get the truthiness and falsiness of the type
         const canBeTruthy = canBeTruthyValue(type);
         const canBeFalsy = canBeFalsyValue(type);
@@ -53,7 +66,7 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
                 node: expr,
                 category: 'warning'
             });
-        } else if (!isBoolean && (canBeTruthy || canBeFalsy)) {
+        } else if (!isBoolean && canBeTruthy && canBeFalsy) {
             // Not a boolean but can be both truthy and falsy
             result.push({
                 message: `This condition is not a boolean type.`,
@@ -77,13 +90,11 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
             let hasOther = false;
 
             for (const t of unionType.types) {
-                if (t.flags & ts.TypeFlags.BooleanLiteral) {
-                    const intrinsicName = (t as any).intrinsicName;
-                    if (intrinsicName === 'true') {
-                        hasTrue = true;
-                    } else if (intrinsicName === 'false') {
-                        hasFalse = true;
-                    }
+                const intrinsicName = getBooleanLiteralIntrinsicName(t);
+                if (intrinsicName === 'true') {
+                    hasTrue = true;
+                } else if (intrinsicName === 'false') {
+                    hasFalse = true;
                 } else {
                     hasOther = true;
                 }
@@ -96,9 +107,9 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
     }
 
     function canBeTruthyValue(type: tsApi.Type): boolean {
-        // Check for literal types
-        if (type.flags & ts.TypeFlags.BooleanLiteral) {
-            const intrinsicName = (type as any).intrinsicName;
+        // Check for literal boolean types
+        const intrinsicName = getBooleanLiteralIntrinsicName(type);
+        if (intrinsicName !== undefined) {
             return intrinsicName === 'true';
         }
 
@@ -114,21 +125,27 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
             return false;
         }
 
-        // Check for literal types
+        // Check for string literal types
         if (type.flags & ts.TypeFlags.StringLiteral) {
             const value = (type as tsApi.StringLiteralType).value;
             return value !== '';
         }
 
+        // Check for number literal types
         if (type.flags & ts.TypeFlags.NumberLiteral) {
             const value = (type as tsApi.NumberLiteralType).value;
             return value !== 0;
         }
 
-        // Objects (including NonPrimitive which is the 'object' type keyword), non-empty strings, non-zero numbers are truthy
-        if (type.flags & (ts.TypeFlags.Object | ts.TypeFlags.NonPrimitive | ts.TypeFlags.String | ts.TypeFlags.Number)) {
+        // Objects (including NonPrimitive which is the 'object' type keyword) are always truthy
+        if (type.flags & (ts.TypeFlags.Object | ts.TypeFlags.NonPrimitive)) {
             return true;
         }
+
+        // String type can be truthy (non-empty) or falsy (empty)
+        // Number type can be truthy (non-zero) or falsy (0)
+        // So we need to check more carefully - these types are NOT always truthy
+        // They will be caught by the union logic below or default to checking both
 
         // Union types - can be truthy if any constituent can be truthy
         if (type.flags & ts.TypeFlags.Union) {
@@ -136,14 +153,25 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
             return unionType.types.some(t => canBeTruthyValue(t));
         }
 
-        // Unknown types - assume they can be truthy
+        // For string and number types without a specific literal, assume they can be both
+        // truthy and falsy, so return true here (they can be truthy)
+        if (type.flags & (ts.TypeFlags.String | ts.TypeFlags.Number)) {
+            return true;
+        }
+
+        // Any/unknown types - don't make assumptions
+        if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+            return true;
+        }
+
+        // Default: assume can be truthy for unknown types
         return true;
     }
 
     function canBeFalsyValue(type: tsApi.Type): boolean {
-        // Check for literal types
-        if (type.flags & ts.TypeFlags.BooleanLiteral) {
-            const intrinsicName = (type as any).intrinsicName;
+        // Check for literal boolean types
+        const intrinsicName = getBooleanLiteralIntrinsicName(type);
+        if (intrinsicName !== undefined) {
             return intrinsicName === 'false';
         }
 
@@ -152,19 +180,20 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
             return true;
         }
 
-        // Falsy values: null, undefined, void, false, 0, ""
+        // Falsy values: null, undefined, void
         if (type.flags & ts.TypeFlags.Undefined ||
             type.flags & ts.TypeFlags.Null ||
             type.flags & ts.TypeFlags.Void) {
             return true;
         }
 
-        // Check for literal types
+        // Check for string literal types
         if (type.flags & ts.TypeFlags.StringLiteral) {
             const value = (type as tsApi.StringLiteralType).value;
             return value === '';
         }
 
+        // Check for number literal types
         if (type.flags & ts.TypeFlags.NumberLiteral) {
             const value = (type as tsApi.NumberLiteralType).value;
             return value === 0;
@@ -180,7 +209,7 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
             return true;
         }
 
-        // Objects (including NonPrimitive which is the 'object' type keyword) cannot be falsy (unless null/undefined which are handled above)
+        // Objects (including NonPrimitive which is the 'object' type keyword) cannot be falsy
         if (type.flags & (ts.TypeFlags.Object | ts.TypeFlags.NonPrimitive)) {
             return false;
         }
@@ -191,7 +220,12 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
             return unionType.types.some(t => canBeFalsyValue(t));
         }
 
-        // Unknown types - assume they can be falsy
+        // Any/unknown types - don't make assumptions
+        if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+            return true;
+        }
+
+        // Default: assume can be falsy for unknown types
         return true;
     }
 
