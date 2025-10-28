@@ -11,7 +11,7 @@ export function withLanguageService(
     const files = new Map<string, string>(
         Object.entries(content).map(([key, value]) => [key, stripMarkers(value).stripped])
     );
-    const serviceHost = new VirtualLanguageServiceHost(files, {});
+    const serviceHost = new VirtualLanguageServiceHost(files, { strict: true, strictNullChecks: true });
     const baseService = ts.createLanguageService(
         serviceHost,
         ts.createDocumentRegistry()
@@ -35,7 +35,18 @@ export class VirtualLanguageServiceHost implements ts.LanguageServiceHost {
     }
 
     public getScriptSnapshot(fileName: string): ts.IScriptSnapshot | undefined {
-        const content = this.files.get(fileName);
+        let content = this.files.get(fileName);
+        
+        // Provide lib files for proper type checking
+        if (!content && fileName.indexOf('lib.') >= 0) {
+            try {
+                const libPath = require.resolve('typescript').replace(/typescript\.js$/, fileName.replace(/.*\//, ''));
+                content = ts.sys.readFile(libPath);
+            } catch (e) {
+                // If we can't load lib files, that's ok for basic tests
+            }
+        }
+        
         if (!content) {
             return undefined;
         }
@@ -64,7 +75,19 @@ export class VirtualLanguageServiceHost implements ts.LanguageServiceHost {
     }
 
     public fileExists(path: string): boolean {
-        return this.files.has(path);
+        if (this.files.has(path)) {
+            return true;
+        }
+        // Check if it's a lib file
+        if (path.indexOf('lib.') >= 0) {
+            try {
+                const libPath = require.resolve('typescript').replace(/typescript\.js$/, path.replace(/.*\//, ''));
+                return ts.sys.fileExists(libPath);
+            } catch (e) {
+                return false;
+            }
+        }
+        return false;
     }
 }
 
@@ -72,16 +95,35 @@ function stripMarkers(src: string): { stripped: string; markers: number[] } {
     let stripped = "";
     const markers = new Array<number>();
     let i = 0;
-    let first = true;
-    for (const part of src.split("|")) {
-        if (first) {
-            first = false;
-        } else {
-            markers.push(i);
+    
+    // Improved logic: only treat | as a marker if it's NOT surrounded by spaces
+    // Markers are like: identi|fier (no spaces)
+    // Union types are like: Type | Other (with spaces)
+    for (let idx = 0; idx < src.length; idx++) {
+        const char = src[idx];
+        
+        if (char === '|') {
+            // Check if this is a marker (no spaces around it) or a union type operator (spaces around it)
+            const prevChar = idx > 0 ? src[idx - 1] : '';
+            const nextChar = idx < src.length - 1 ? src[idx + 1] : '';
+            
+            // Union types have spaces: "A | B"
+            // Markers don't: "identifi|er"
+            const hasSpaceBefore = /\s/.test(prevChar) || prevChar === '';
+            const hasSpaceAfter = /\s/.test(nextChar) || nextChar === '';
+            const isUnionType = hasSpaceBefore && hasSpaceAfter;
+            
+            if (!isUnionType) {
+                // This is a marker, record position and skip it
+                markers.push(i);
+                continue;
+            }
         }
-        stripped += part;
-        i += part.length;
+        
+        stripped += char;
+        i++;
     }
+    
     return {
         stripped,
         markers,
