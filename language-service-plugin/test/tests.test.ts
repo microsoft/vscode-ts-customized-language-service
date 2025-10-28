@@ -549,4 +549,27 @@ describe("Condition Checker", () => {
 			`);
 		}
 	));
+
+	test('Union type without spaces works correctly now', () => withLanguageService(
+		`
+			type MyType = string|number; // Union type without spaces
+			declare const x: MyType;
+			if (x) {
+				const y = 1;
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+
+			const diags = normalizeDiagnostics(ls.getSemanticDiagnostics(sf.fileName), languageService.getProgram());
+			const filtered = diags?.filter(d => d.includes("This condition"));
+			// With ‖ marker, | can be used freely in union types without spaces
+			expect(filtered).toMatchInlineSnapshot(`
+				[
+				  "diag: 			if ([x]) {
+				-> This condition is not a boolean type.",
+				]
+			`);
+		}
+	));
 });
