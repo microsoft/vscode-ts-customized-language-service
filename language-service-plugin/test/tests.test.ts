@@ -11,7 +11,7 @@ describe("Remove Duplicate Definitions", () => {
 				}
 			}
 
-			new Te|st();
+			new Te‖st();
 		`,
 		(ts, languageService, sf, m) => {
 			const ls = decorateLanguageService(ts, languageService)
@@ -43,7 +43,7 @@ describe("Remove Duplicate Definitions", () => {
 				return new ctor(...args);
 			}
 
-			createInstance(TextModelChange|Tracker, "model", "state", "info", "id");
+			createInstance(TextModelChange‖Tracker, "model", "state", "info", "id");
 		`,
 		(ts, languageService, sf, m) => {
 			const ls = decorateLanguageService(ts, languageService)
@@ -73,7 +73,7 @@ describe("Remove Duplicate Definitions", () => {
 				}
 			}
 
-			const someVariable: TextModelChange|Tracker;
+			const someVariable: TextModelChange‖Tracker;
 		`,
 		(ts, languageService, sf, m) => {
 			const ls = decorateLanguageService(ts, languageService)
@@ -91,7 +91,7 @@ describe("Find Indirect Constructors", () => {
 	test('Basic', () => withLanguageService(
 		`
 			class Test {
-				cons|tructor() {
+				cons‖tructor() {
 					console.log("test");
 				}
 			}
@@ -125,7 +125,7 @@ describe("Go to Definition for Untyped Fields", () => {
 					this.myField = 1; // [2]
 				}
 			}
-			new FooBar().my|Field; // [3]
+			new FooBar().my‖Field; // [3]
 		`,
 		(ts, languageService, sf, m) => {
 			const ls = decorateLanguageService(ts, languageService)
@@ -146,7 +146,7 @@ describe("Go to Definition for Untyped Fields", () => {
 					this.myField = 1; // [2]
 				}
 			}
-			new FooBar().my|Field; // [3]
+			new FooBar().my‖Field; // [3]
 		`,
 		(ts, languageService, sf, m) => {
 			const ls = decorateLanguageService(ts, languageService)
@@ -170,7 +170,7 @@ describe("Go to Definition for Untyped Fields", () => {
 					this.myField = 2; // [2] - should go here
 				}
 			}
-			new FooBar().my|Field; // [3]
+			new FooBar().my‖Field; // [3]
 		`,
 		(ts, languageService, sf, m) => {
 			const ls = decorateLanguageService(ts, languageService)
@@ -545,6 +545,29 @@ describe("Condition Checker", () => {
 				[
 				  "diag: 				if ([x]) {
 				-> This condition will always return 'true'.",
+				]
+			`);
+		}
+	));
+
+	test('Union type without spaces works correctly now', () => withLanguageService(
+		`
+			type MyType = string|number; // Union type without spaces
+			declare const x: MyType;
+			if (x) {
+				const y = 1;
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+
+			const diags = normalizeDiagnostics(ls.getSemanticDiagnostics(sf.fileName), languageService.getProgram());
+			const filtered = diags?.filter(d => d.includes("This condition"));
+			// With ‖ marker, | can be used freely in union types without spaces
+			expect(filtered).toMatchInlineSnapshot(`
+				[
+				  "diag: 			if ([x]) {
+				-> This condition is not a boolean type.",
 				]
 			`);
 		}
