@@ -1,12 +1,15 @@
-trigger: none 
+trigger:
+    branches:
+        include:
+            - main
 pr: none
 
-schedules:
-    - cron: "0 9 * * Mon-Thu"
-      displayName: Nightly Release Schedule
-      branches:
-          include:
-              - main
+# schedules:
+#     - cron: "0 9 * * Mon-Thu"
+#       displayName: Nightly Release Schedule
+#       branches:
+#           include:
+#               - main
 
 resources:
     repositories:
@@ -20,7 +23,7 @@ parameters:
     - name: publishExtension
       displayName: 🚀 Publish Extension
       type: boolean
-      default: false
+      default: true
 
 extends:
     template: azure-pipelines/extension/pre-release.yml@templates
