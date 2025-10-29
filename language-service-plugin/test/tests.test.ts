@@ -573,3 +573,192 @@ describe("Condition Checker", () => {
 		}
 	));
 });
+
+describe("Condition Code Fixes", () => {
+	test('Code fix for always true condition', () => withLanguageService(
+		`
+			if (true) {
+				const x = 1;
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+			
+			const diags = ls.getSemanticDiagnostics(sf.fileName);
+			const conditionDiags = diags.filter(d => d.code === 90001 || d.code === 90002);
+			
+			expect(conditionDiags.length).toBe(1);
+			const diag = conditionDiags[0];
+			expect(diag.code).toBe(90001); // CONDITION_ALWAYS_TRUE
+			
+			// Get code fixes for this diagnostic
+			const fixes = ls.getCodeFixesAtPosition(
+				sf.fileName,
+				diag.start!,
+				diag.start! + diag.length!,
+				[diag.code],
+				{},
+				{}
+			);
+			
+			expect(fixes.length).toBeGreaterThan(0);
+			const ourFix = fixes.find(f => f.fixName === 'replaceWithTrue');
+			expect(ourFix).toBeDefined();
+			expect(ourFix?.description).toBe("Replace with 'true'");
+			expect(ourFix?.changes[0].textChanges[0].newText).toBe('true');
+		}
+	));
+
+	test('Code fix for always false condition', () => withLanguageService(
+		`
+			if (false) {
+				const x = 1;
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+			
+			const diags = ls.getSemanticDiagnostics(sf.fileName);
+			const conditionDiags = diags.filter(d => d.code === 90001 || d.code === 90002);
+			
+			expect(conditionDiags.length).toBe(1);
+			const diag = conditionDiags[0];
+			expect(diag.code).toBe(90002); // CONDITION_ALWAYS_FALSE
+			
+			// Get code fixes for this diagnostic
+			const fixes = ls.getCodeFixesAtPosition(
+				sf.fileName,
+				diag.start!,
+				diag.start! + diag.length!,
+				[diag.code],
+				{},
+				{}
+			);
+			
+			expect(fixes.length).toBeGreaterThan(0);
+			const ourFix = fixes.find(f => f.fixName === 'replaceWithFalse');
+			expect(ourFix).toBeDefined();
+			expect(ourFix?.description).toBe("Replace with 'false'");
+			expect(ourFix?.changes[0].textChanges[0].newText).toBe('false');
+		}
+	));
+
+	test('Code fix for always true in ternary expression', () => withLanguageService(
+		`
+			const y = true ? 1 : 2;
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+			
+			const diags = ls.getSemanticDiagnostics(sf.fileName);
+			const conditionDiags = diags.filter(d => d.code === 90001 || d.code === 90002);
+			
+			expect(conditionDiags.length).toBe(1);
+			const diag = conditionDiags[0];
+			expect(diag.code).toBe(90001); // CONDITION_ALWAYS_TRUE
+			
+			// Get code fixes for this diagnostic
+			const fixes = ls.getCodeFixesAtPosition(
+				sf.fileName,
+				diag.start!,
+				diag.start! + diag.length!,
+				[diag.code],
+				{},
+				{}
+			);
+			
+			expect(fixes.length).toBeGreaterThan(0);
+			const ourFix = fixes.find(f => f.fixName === 'replaceWithTrue');
+			expect(ourFix).toBeDefined();
+		}
+	));
+
+	test('Code fix for always true - object type', () => withLanguageService(
+		`
+			function test(x: object) {
+				if (x) {
+					const y = 1;
+				}
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+			
+			const diags = ls.getSemanticDiagnostics(sf.fileName);
+			const conditionDiags = diags.filter(d => d.code === 90001 || d.code === 90002);
+			
+			expect(conditionDiags.length).toBe(1);
+			const diag = conditionDiags[0];
+			expect(diag.code).toBe(90001); // CONDITION_ALWAYS_TRUE
+			
+			// Get code fixes for this diagnostic
+			const fixes = ls.getCodeFixesAtPosition(
+				sf.fileName,
+				diag.start!,
+				diag.start! + diag.length!,
+				[diag.code],
+				{},
+				{}
+			);
+			
+			expect(fixes.length).toBeGreaterThan(0);
+			const ourFix = fixes.find(f => f.fixName === 'replaceWithTrue');
+			expect(ourFix).toBeDefined();
+			expect(ourFix?.changes[0].textChanges[0].newText).toBe('true');
+		}
+	));
+
+	test('Code fix for always false - empty string literal', () => withLanguageService(
+		`
+			function test(x: "") {
+				if (x) {
+					const y = 1;
+				}
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+			
+			const diags = ls.getSemanticDiagnostics(sf.fileName);
+			const conditionDiags = diags.filter(d => d.code === 90001 || d.code === 90002);
+			
+			expect(conditionDiags.length).toBe(1);
+			const diag = conditionDiags[0];
+			expect(diag.code).toBe(90002); // CONDITION_ALWAYS_FALSE
+			
+			// Get code fixes for this diagnostic
+			const fixes = ls.getCodeFixesAtPosition(
+				sf.fileName,
+				diag.start!,
+				diag.start! + diag.length!,
+				[diag.code],
+				{},
+				{}
+			);
+			
+			expect(fixes.length).toBeGreaterThan(0);
+			const ourFix = fixes.find(f => f.fixName === 'replaceWithFalse');
+			expect(ourFix).toBeDefined();
+			expect(ourFix?.changes[0].textChanges[0].newText).toBe('false');
+		}
+	));
+
+	test('No code fix for non-constant conditions', () => withLanguageService(
+		`
+			function test(x: boolean) {
+				if (x) {
+					const y = 1;
+				}
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+			
+			const diags = ls.getSemanticDiagnostics(sf.fileName);
+			const conditionDiags = diags.filter(d => d.code === 90001 || d.code === 90002);
+			
+			// Should have no diagnostics for a normal boolean condition
+			expect(conditionDiags.length).toBe(0);
+		}
+	));
+});
