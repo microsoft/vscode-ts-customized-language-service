@@ -572,4 +572,75 @@ describe("Condition Checker", () => {
 			`);
 		}
 	));
+
+	test('Optional parameter - should not warn always true', () => withLanguageService(
+		`
+			class C {
+				constructor(foo?: Object) {
+					if (foo) { 
+						console.log(foo);
+					}
+				}
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+
+			const diags = normalizeDiagnostics(ls.getSemanticDiagnostics(sf.fileName), languageService.getProgram());
+			const filtered = diags?.filter(d => d.includes("This condition"));
+			// Optional parameters can be undefined, so this should get a hint (not boolean) rather than warning (always true)
+			expect(filtered).toMatchInlineSnapshot(`
+				[
+				  "diag: 					if ([foo]) { 
+				-> This condition is not a boolean type.",
+				]
+			`);
+		}
+	));
+
+	test('Optional parameter with union type', () => withLanguageService(
+		`
+			function test(foo?: string | null) {
+				if (foo) { 
+					console.log(foo);
+				}
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+
+			const diags = normalizeDiagnostics(ls.getSemanticDiagnostics(sf.fileName), languageService.getProgram());
+			const filtered = diags?.filter(d => d.includes("This condition"));
+			// Optional parameter with union including null/undefined should get a hint
+			expect(filtered).toMatchInlineSnapshot(`
+				[
+				  "diag: 				if ([foo]) { 
+				-> This condition is not a boolean type.",
+				]
+			`);
+		}
+	));
+
+	test('Non-optional object parameter - should warn always true', () => withLanguageService(
+		`
+			function test(foo: Object) {
+				if (foo) { 
+					console.log(foo);
+				}
+			}
+		`,
+		(ts, languageService, sf, m) => {
+			const ls = decorateLanguageService(ts, languageService)
+
+			const diags = normalizeDiagnostics(ls.getSemanticDiagnostics(sf.fileName), languageService.getProgram());
+			const filtered = diags?.filter(d => d.includes("This condition"));
+			// Non-optional object should still warn always true
+			expect(filtered).toMatchInlineSnapshot(`
+				[
+				  "diag: 				if ([foo]) { 
+				-> This condition will always return 'true'.",
+				]
+			`);
+		}
+	));
 });

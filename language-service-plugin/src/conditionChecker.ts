@@ -53,6 +53,13 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
                     for (const decl of declarations) {
                         // For variable declarations, parameters, etc.
                         if ((ts.isVariableDeclaration(decl) || ts.isParameter(decl)) && decl.type) {
+                            // For optional parameters (foo?: Type), skip the manual type extraction
+                            // and use the actual type from TypeChecker, which includes undefined
+                            if (ts.isParameter(decl) && decl.questionToken) {
+                                // Don't override type - use the one from typeChecker that includes undefined
+                                continue;
+                            }
+                            
                             // Get the type from the type annotation
                             let declaredType = typeChecker.getTypeFromTypeNode(decl.type);
                             
