@@ -11,7 +11,15 @@ export interface ConditionDiagnostic {
     message: string;
     node: tsApi.Node;
     category: 'warning' | 'hint';
+    code?: number;
+    conditionType?: 'always-true' | 'always-false';
 }
+
+// Diagnostic codes for our custom diagnostics
+export const DiagnosticCodes = {
+    CONDITION_ALWAYS_TRUE: 90001,
+    CONDITION_ALWAYS_FALSE: 90002,
+} as const;
 
 // Helper to safely get the intrinsic name of a boolean literal type
 function getBooleanLiteralIntrinsicName(type: tsApi.Type): 'true' | 'false' | undefined {
@@ -103,14 +111,18 @@ export function checkConditions(sf: tsApi.SourceFile, program: tsApi.Program): C
             result.push({
                 message: `This condition will always return 'false'.`,
                 node: expr,
-                category: 'warning'
+                category: 'warning',
+                code: DiagnosticCodes.CONDITION_ALWAYS_FALSE,
+                conditionType: 'always-false'
             });
         } else if (canBeTruthy && !canBeFalsy) {
             // Always true
             result.push({
                 message: `This condition will always return 'true'.`,
                 node: expr,
-                category: 'warning'
+                category: 'warning',
+                code: DiagnosticCodes.CONDITION_ALWAYS_TRUE,
+                conditionType: 'always-true'
             });
         } else if (!isBoolean && canBeTruthy && canBeFalsy) {
             // Not a boolean but can be both truthy and falsy
