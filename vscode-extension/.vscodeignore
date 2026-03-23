@@ -1,0 +1,12 @@
+# Exclude files from parent workspace directories
+../**
+# Default catch-all: exclude everything not explicitly included below
+**
+# Extension build artifacts
+!dist/**/*
+!package.json
+# TypeScript server plugin (copied here by the rollup build)
+!node_modules/@vscode/ts-plugin-customized/**/*
+# Extension assets
+!docs/logo.drawio.png
+!LICENSE
