@@ -1,0 +1,8 @@
+../**
+src/**
+scripts/**
+tsconfig.json
+rollup.config.mjs
+README.prerelease.md
+node_modules/**
+!node_modules/@vscode/ts-plugin-customized/**
