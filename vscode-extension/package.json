@@ -14,13 +14,6 @@
 	"engines": {
 		"vscode": "^1.90.0"
 	},
-	"files": [
-		"dist/**/*",
-		"package.json",
-		"node_modules/@vscode/ts-plugin-customized/**/*",
-		"docs/logo.drawio.png",
-		"LICENSE"
-	],
 	"publisher": "ms-vscode",
 	"readme": "./README.md",
 	"repository": {
@@ -51,13 +44,12 @@
 		"dev": "rollup -c rollup.config.mjs --watch",
 		"patch-prerelease": "node ./scripts/applyPatchForPrerelease.js"
 	},
-	"dependencies": {
-		"@vscode/ts-plugin-customized": "*"
-	},
+	"dependencies": {},
 	"devDependencies": {
 		"@rollup/plugin-typescript": "11.1.6",
 		"@types/node": "^20.14.9",
 		"@types/vscode": "^1.90.0",
+		"@vscode/ts-plugin-customized": "*",
 		"@vscode/vsce": "^3.2.2",
 		"rollup": "4.59.0",
 		"rollup-plugin-copy": "3.5.0",
