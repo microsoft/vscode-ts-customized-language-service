@@ -5,7 +5,7 @@
 		"vscode-extension"
 	],
 	"devDependencies": {
-		"vitest": "^1.6.0"
+		"vitest": "^4.1.1"
 	},
 	"scripts": {
 		"build": "npm run build -w @vscode/ts-plugin-customized && npm run build -w ts-customized-language-service",
