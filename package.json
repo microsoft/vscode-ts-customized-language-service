@@ -8,7 +8,7 @@
 		"vitest": "^1.6.0"
 	},
 	"scripts": {
-		"build": "yarn workspace @vscode/ts-plugin-customized build && yarn workspace ts-customized-language-service build",
-		"test": "yarn workspace @vscode/ts-plugin-customized test"
+		"build": "npm run build -w @vscode/ts-plugin-customized && npm run build -w ts-customized-language-service",
+		"test": "npm run test -w @vscode/ts-plugin-customized"
 	}
 }

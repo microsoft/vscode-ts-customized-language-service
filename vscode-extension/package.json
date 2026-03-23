@@ -45,7 +45,7 @@
 		]
 	},
 	"scripts": {
-		"build": "yarn build-src && yarn build-package",
+		"build": "npm run build-src && npm run build-package",
 		"build-src": "rollup -c rollup.config.mjs",
 		"build-package": "vsce package --out extension.vsix",
 		"dev": "rollup -c rollup.config.mjs --watch",
@@ -66,7 +66,6 @@
 	},
 	"vsce": {
 		"baseImagesUrl": "https://github.com/microsoft/vscode-ts-customized-language-service/raw/main/vscode-extension",
-		"baseContentUrl": "https://github.com/microsoft/vscode-ts-customized-language-service/raw/main/vscode-extension",
-		"yarn": true
+		"baseContentUrl": "https://github.com/microsoft/vscode-ts-customized-language-service/raw/main/vscode-extension"
 	}
 }
