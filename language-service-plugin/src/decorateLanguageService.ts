@@ -1,6 +1,6 @@
 import type * as tsApi from "typescript/lib/tsserverlibrary";
 import { check, setTsApi } from "./propertyInitOrderChecker";
-import { checkConditions, setTsApi as setConditionCheckerTsApi } from "./conditionChecker";
+import { checkConditions, setTsApi as setConditionCheckerTsApi, DiagnosticCodes } from "./conditionChecker";
 
 export function decorateLanguageService(ts: typeof tsApi, service: tsApi.LanguageService): tsApi.LanguageService {
     setTsApi(ts);
@@ -288,7 +288,7 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
                 for (const diagnostic of conditionDiagnostics) {
                     result.push({
                         category: diagnostic.category === 'warning' ? ts.DiagnosticCategory.Warning : ts.DiagnosticCategory.Suggestion,
-                        code: 0,
+                        code: diagnostic.code || 0,
                         file: sf,
                         messageText: diagnostic.message,
                         start: diagnostic.node.getStart(sf),
@@ -371,6 +371,64 @@ export function decorateLanguageService(ts: typeof tsApi, service: tsApi.Languag
             }
 
             return result;
+        },
+        getCodeFixesAtPosition: (fileName, start, end, errorCodes, formatOptions, preferences) => {
+            // Get the original code fixes from the base language service
+            const originalFixes = service.getCodeFixesAtPosition(fileName, start, end, errorCodes, formatOptions, preferences);
+            
+            // Check if any of our custom diagnostic codes are in the error codes
+            const hasAlwaysTrueDiagnostic = errorCodes.includes(DiagnosticCodes.CONDITION_ALWAYS_TRUE);
+            const hasAlwaysFalseDiagnostic = errorCodes.includes(DiagnosticCodes.CONDITION_ALWAYS_FALSE);
+            
+            if (!hasAlwaysTrueDiagnostic && !hasAlwaysFalseDiagnostic) {
+                return originalFixes;
+            }
+            
+            // Get the source file and program
+            const program = service.getProgram();
+            const sf = program?.getSourceFile(fileName);
+            if (!sf || !program) {
+                return originalFixes;
+            }
+            
+            // Find the node at the position
+            const node = findLeafNodeAtPosition(sf, start);
+            if (!node) {
+                return originalFixes;
+            }
+            
+            // Create our custom code fix
+            const fixes: tsApi.CodeFixAction[] = [...originalFixes];
+            
+            if (hasAlwaysTrueDiagnostic) {
+                fixes.push({
+                    fixName: 'replaceWithTrue',
+                    description: "Replace with 'true'",
+                    changes: [{
+                        fileName: fileName,
+                        textChanges: [{
+                            span: { start: start, length: end - start },
+                            newText: 'true'
+                        }]
+                    }]
+                });
+            }
+            
+            if (hasAlwaysFalseDiagnostic) {
+                fixes.push({
+                    fixName: 'replaceWithFalse',
+                    description: "Replace with 'false'",
+                    changes: [{
+                        fileName: fileName,
+                        textChanges: [{
+                            span: { start: start, length: end - start },
+                            newText: 'false'
+                        }]
+                    }]
+                });
+            }
+            
+            return fixes;
         }
     };
 
