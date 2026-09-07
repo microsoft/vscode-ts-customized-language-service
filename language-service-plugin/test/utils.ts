@@ -194,3 +194,18 @@ function extendToFullLines(span: ts.TextSpan, str: string): ts.TextSpan {
         length: end - start,
     };
 }
+
+export function normalizeCodeFixes(fixes: readonly ts.CodeFixAction[] | undefined) {
+    if (!fixes) {
+        return undefined;
+    }
+    
+    const result: string[] = [];
+    for (const fix of fixes) {
+        const changes = fix.changes.map(change => 
+            change.textChanges.map(tc => tc.newText).join(', ')
+        ).join('; ');
+        result.push(`${fix.description}: ${changes}`);
+    }
+    return result;
+}
